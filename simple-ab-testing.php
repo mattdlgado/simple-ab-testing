@@ -3,7 +3,7 @@
  * Plugin Name: Simple A/B Testing
  * Plugin URI: https://github.com/mattdlgado/simple-ab-testing
  * Description: A/B/N testing plugin using HTML data attributes for Gutenberg
- * Version: 1.0.0
+ * Version: 1.1.0
  * Author: Matt Delgado
  * Author URI: https://github.com/mattdlgado
  * License: GPL v2 or later
@@ -37,7 +37,7 @@ function simple_ab_testing_enqueue_scripts() {
         'simple-ab-testing',
         plugin_dir_url(__FILE__) . 'assets/js/ab-testing.js',
         array(), // No dependencies
-        '1.0.0',
+        '1.1.0',
         array(
             'in_footer' => true,
             'strategy' => 'defer' // Load with defer strategy for early execution
