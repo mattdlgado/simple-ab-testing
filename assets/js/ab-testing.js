@@ -50,6 +50,11 @@
      */
     const ABTesting = {
         /**
+         * Store active variants for tracking
+         */
+        activeVariants: {},
+        
+        /**
          * Initialize all A/B tests on the page
          */
         init: function() {
@@ -59,6 +64,9 @@
             testContainers.forEach(function(container) {
                 ABTesting.processTest(container);
             });
+            
+            // Initialize conversion tracking
+            ABTesting.initConversionTracking();
         },
 
         /**
@@ -97,6 +105,12 @@
 
             // Determine which variant to show
             const selectedVariant = ABTesting.selectVariant(testName, variantNames);
+            
+            // Store active variant for tracking
+            ABTesting.activeVariants[testName] = selectedVariant;
+            
+            // Track view
+            ABTesting.trackView(testName, selectedVariant);
 
             // Remove all variants except the selected one
             variants.forEach(function(variant) {
@@ -131,6 +145,82 @@
             CookieManager.set(cookieName, selectedVariant, 30);
 
             return selectedVariant;
+        },
+        
+        /**
+         * Track a view via AJAX
+         * @param {string} testName - Test name
+         * @param {string} variant - Variant name
+         */
+        trackView: function(testName, variant) {
+            // Check if we have the necessary data
+            if (typeof simpleABTesting === 'undefined') {
+                return;
+            }
+            
+            const data = new FormData();
+            data.append('action', 'ab_testing_track_view');
+            data.append('test_name', testName);
+            data.append('variant', variant);
+            data.append('nonce', simpleABTesting.nonce);
+            
+            fetch(simpleABTesting.ajaxUrl, {
+                method: 'POST',
+                body: data,
+                credentials: 'same-origin'
+            }).catch(function(error) {
+                console.error('Failed to track view:', error);
+            });
+        },
+        
+        /**
+         * Track a conversion via AJAX
+         * @param {string} testName - Test name
+         * @param {string} variant - Variant name
+         */
+        trackConversion: function(testName, variant) {
+            // Check if we have the necessary data
+            if (typeof simpleABTesting === 'undefined') {
+                return;
+            }
+            
+            const data = new FormData();
+            data.append('action', 'ab_testing_track_conversion');
+            data.append('test_name', testName);
+            data.append('variant', variant);
+            data.append('nonce', simpleABTesting.nonce);
+            
+            fetch(simpleABTesting.ajaxUrl, {
+                method: 'POST',
+                body: data,
+                credentials: 'same-origin'
+            }).catch(function(error) {
+                console.error('Failed to track conversion:', error);
+            });
+        },
+        
+        /**
+         * Initialize conversion tracking for elements with data-ab-conversion
+         */
+        initConversionTracking: function() {
+            // Find all conversion elements
+            const conversionElements = document.querySelectorAll('[data-ab-conversion]');
+            
+            conversionElements.forEach(function(element) {
+                const testName = element.getAttribute('data-ab-conversion');
+                
+                if (!testName) {
+                    return;
+                }
+                
+                // Add click listener
+                element.addEventListener('click', function() {
+                    // Check if we have an active variant for this test
+                    if (ABTesting.activeVariants[testName]) {
+                        ABTesting.trackConversion(testName, ABTesting.activeVariants[testName]);
+                    }
+                });
+            });
         }
     };
 
